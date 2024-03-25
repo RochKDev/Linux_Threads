@@ -9,18 +9,12 @@ Kowalski Roch
 
 ## Instructions d'utilisation
 
-### Exctraction du fichier .tar
-
-```bash
-tar -xvf Kowalski_Thread.tar
-```
-
 ### Génération du rapport PDF
 
 Rendez-vous dans le dossier "Kowalski_Thread/report"
 
 ```bash
-cd Kowalski_Thread/report
+cd report
 ```
 
 Pour compiler le rapport, executer :
