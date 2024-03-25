@@ -1,6 +1,6 @@
 # Linux Threads
 
-Ce dépot contiens mon travail de recherche sur les threads Linux en C.
+Ce dépot contiens mon travail de recherche sur les threads Linux en C.  
 This repository contains my research work on Linux threads in C.
 
 ## Auteur
