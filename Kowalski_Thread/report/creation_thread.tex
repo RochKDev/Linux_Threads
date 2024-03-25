@@ -1,0 +1,80 @@
+\section{Création de Thread}
+Dès lors que nous savons ce qu'est un thread, nous pouvons maintenant nous intéresser à son implémentation concrète dans nos programmes. Pour ce faire, nous devons tout d'abord créer ledit thread. La création d'un thread s'effectue via l'appel de fonction \textit{pthread\_create()}.
+\\
+
+\subsection{La fonction \textit{pthread\_create()}}
+\begin{lstlisting}[ title = Création d'un thread]
+#include <pthread.h>
+
+int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
+ void *(*start)(void *), void *arg);
+\end{lstlisting}
+\vspace{\baselineskip}
+
+
+La fonction renvoie un entier pour signaler si la création s'est bien passée. Ici, nous rencontrons une spécificité des pthreads, à savoir que la fonction \textit{pthread\_create()} retournera 0 en cas de réussite, mais elle retournera un entier positif en cas d'échec. Contrairement aux fonctions standard qui renvoient une valeur négative en cas d'échec.
+\\
+
+Continuons en listant les paramètres que nous devons passer à la fonction. Le premier paramètre est un pointeur vers un buffer de type \textit{pthread\_t} dans lequel sera stocké l'ID unique du thread créé. Le deuxième paramètre est un pointeur vers un objet \textit{pthread\_attr\_t} qui spécifie les différents attributs du thread créé. Si on passe \textit{NULL} à \textit{attr}, alors le thread possédera des attributs aléatoires.
+
+Le troisième paramètre, le plus difficile à comprendre, est « \textit{void *(*start) (void *)} ». Analysons un peu cela. Il s'agit ici d'une déclaration de pointeur de fonction. Décortiquons chaque élément afin de mieux comprendre :
+
+
+
+\begin{itemize}
+    \item 	void *: Le type de retour de la fonction. Ici, la fonction renvoie un pointeur vers void, ce qui signifie qu’elle peut pointer vers n’importe quel type de données.
+    \\
+    \item 	(*start) : start est un pointeur vers une fonction. Les parenthèses sont nécessaires pour indiquer que start est un pointeur vers une fonction, et non une fonction qui renvoie un pointeur.
+    \\
+    \item 	(void *) : Le type d’argument que la fonction accepte. Ici, la fonction accepte un pointeur vers void, ce qui signifie qu’elle peut accepter un pointeur vers n’importe quel type de données.
+    \\   
+\end{itemize}
+\vspace{\baselineskip}
+
+Pour finir, le dernier paramètre est un pointeur vers void. Il s'agit des arguments à passer à la fonction \textit{start}.Vu que nous avons affaire à un pointeur de \textit{void}, nous pouvons passer n'importe quel objet à \textit{start}; nous pouvons également passer \textit{NULL}. Généralement, \textit{arg} pointe vers une variable globale ou une variable sur le tas. Si nous avons besoin de passer plusieurs arguments à \textit{start}, nous pouvons passer à \textit{arg} un pointeur vers une structure contenant les différents arguments en tant qu'emplacement séparé.
+\\
+
+\subsubsection{Exemple de code de création}
+\begin{lstlisting}[title = Exemple de code de création ]
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stddef.h>
+#include <pthread.h>
+void* myturn(){
+	for(int i = 0; i < 8; i++){
+		sleep(1);
+		printf("my Turn\n");
+	}
+}
+void* yourturn(){
+	for(int i = 0; i < 4; i++){
+		sleep(1);
+		printf("Your Turn\n");
+	}
+}
+
+int main(){
+	pthread_t newthread;
+
+	pthread_create(&newthread, NULL, &myturn, NULL);
+	
+	yourturn();
+}
+\end{lstlisting}
+\vspace{\baselineskip}
+
+
+    Comme on peut le remarquer, on passe, dans l'ordre, la référence au buffer pour récupérer l'id du thread,
+ensuite on a marqué \textit{NULL} pour les attributs du thread car cela ne nous intéresse pas, le prochain argument est le pointeur vers notre fonction \textbf{Myturn}. Pour finir, le dernier argument est la liste des arguments que l'on souhaite passer à notre fonction \textbf{Myturn}, dans notre cas \textit{NULL} car nous n'avons pas besoin de paramètres pour cette fonction.
+
+\subsubsection{La fonction \textit{gettid()}}
+
+Lors de la création d'un thread, comme nous venons de le voir, son identifiant seras stocké dans le buffer destiné a cet usage dans le thread appelant. Mais il se pourrais que le thread aie besoin de son propre ID. Dans ce cas, la fonction \textit{gettid()} entre en jeu. Tout comme son équivalent du coté des processus, \textit{getpid()}, elle sert à connaitre l'id du thread appelant.
+\begin{lstlisting}
+#define _GNU_SOURCE
+#include <unistd.h>
+
+    pid_t gettid(void);
+
+\end{lstlisting}

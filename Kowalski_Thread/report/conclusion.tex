@@ -1,0 +1,33 @@
+\section{Conclusion}
+
+En conclusion, cette étude approfondie a permis d'explorer en détail les divers aspects du phénomène étudié. Nous avons examiné les facteurs clés qui influent sur les différences entre les processus et les threads, mettant en lumière les différentes perspectives et les lacunes dans chacun des cas. Suite à cette recherche, nous avons pu établir les différences ainsi que les similarités entre les processus et les threads.
+\\
+
+Premièrement, nous avons introduit le concept de threads. Un concept novateur qui a donné naissance à la programmation multi-thread. Nous avons vu en détails de quoi est constitué un thread, ainsi que son espace mémoire. De plus, nous avons également constaté que la création d'un thread est 10 fois, voire plus, plus rapide que le \textit{fork()} d'un processus. Enfin, nous avons remarqué que tous les processus tournent sur un thread de base.
+\\
+
+Deuxièmement, nous nous sommes penchés sur la création d'un thread. Nous avons analysé en détail la fonction de création \textit{pthread\_create()}, en décortiquant tous ses paramètres ainsi qu'en illustrant son utilisation en code.
+\\
+
+Troisièmement, nous avons vu quelle était la durée de vie des threads ainsi que comment gérer cette durée de vie pour que les threads se terminent de manière désirée et non aléatoire. Nous avons pu accomplir cela grâce à la fonction \textit{pthread\_join}, qui va attendre le thread spécifié et empêcher le thread appelant de se terminer sans attendre la fin du thread attendu.
+\\
+
+Quatrièmement, nous avons abordé la gestion des variables globales et locales par les processus et les threads. Nous avons établi qu'un processus fils ne modifiera pas une variable globale car lors du \textit{fork()}, le processus parent est copié pour donner naissance au processus fils, mais ce dernier sera copié dans un tout nouvel espace mémoire. C'est également pour cette raison que même les pointeurs ne fonctionneront pas lors du \textit{fork()} pour communiquer entre les deux processus.
+
+Ensuite, nous avons analysé la situation du côté des threads. Ici, nous avons vu que les variables globales seront partagées entre tous les threads du processus. Cela est possible grâce à l'architecture même du thread et sa gestion de mémoire.
+
+Puis, nous avons énoncé qu'il n'y a pas de différence dans le traitement des variables globales et locales dans les processus. Nous avons simplement ajouté que lors d'un \textbf{Copy-On-Write}, la technique est employée pour augmenter les performances lors du \textit{fork()}.
+
+En ce qui concerne les variables locales dans les threads, nous avons mis en évidence que les threads ne partagent pas entre eux leurs variables locales car cela découle de leur architecture. Chaque thread possède son propre stack dans lequel sont stockées les variables locales. Pour passer un paramètre entre le processus appelant et appelé, on peut passer la variable locale en paramètre de la fonction \textit{pthread\_create}, dans l'argument prévu à cet effet.
+\\
+
+Pour conclure, nous nous sommes penchés sur la gestion de la concurrence des variables, en particulier dans les threads, avec un système dédié fourni par la librairie \textit{pthread} : les \textbf{mutex}. Contrairement aux systèmes de gestion de la concurrence d'accès déjà connus tels que les sémaphores ou les verrous de fichiers, les threads disposent d'un système adapté à leur usage précis.
+
+Nous avons d'abord défini ce qu'était un mutex, puis nous avons vu qu'il existait deux types de mutex différents. Nous avons ensuite établi leurs différents cas d'utilisation pour mieux nous guider dans le choix d'implémentation. De plus, nous avons exploré les mutex conditionnels, qui ajoutent des fonctionnalités au mutex de base. Nous avons également attiré l'attention sur l'importance de bien gérer nos mutex sous peine de générer des deadlocks indésirables. De plus, nous avons mentionné qu'il était possible d'utiliser des systèmes de gestion de la concurrence classiques tels que les sémaphores sur les threads. Du côté des processus, bien qu'il soit techniquement possible d'utiliser des mutex, la mise en place de ce système est bien trop complexe pour avoir une véritable utilité pratique.
+\\ 
+
+En outre, le choix entre un processus fils et un thread est une question complexe qui dépend fortement des besoins spécifiques de notre programme. Il n'y a pas de réponse universelle où une solution serait mauvaise et l'autre correcte. Par exemple, si notre programme doit effectuer une commande externe, il serait avisé d'utiliser un processus fils, car lors de l'exécution de la fonction \textit{execlp()}, toute la mémoire du processus appelant sera écrasée. Ceci peut être indésirable pour un thread, sachant qu'il partage de la mémoire avec le thread appelant.
+
+Un autre exemple concerne un programme qui doit effectuer une action rapide en arrière-plan ou qui manipule de nombreuses variables globales. Dans ce cas, il serait préférable d'utiliser un thread en raison de sa rapidité de création ainsi que du partage des variables globales sans avoir besoin de passer par des systèmes dédiés à cet effet (mémoire partagée, pipe, etc.).
+
+Il est donc impossible de déterminer a priori l'option meilleure que l'autre ; tout dépendra des exigences spécifiques du programme envisagé. C'est pourquoi nous vous encourageons à explorer ce vaste sujet des threads afin de répondre au mieux à vos besoins.

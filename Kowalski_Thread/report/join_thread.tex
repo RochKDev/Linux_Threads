@@ -1,0 +1,66 @@
+\section{Jointure de Threads}
+
+Dès lors que nous savons ce qu'est réellement un thread et comment en créer un, nous pouvons nous intéresser à leur utilisation. Le premier aspect fonctionnel des threads que nous allons aborder est le scope de vie d'un thread. Mais qu'est-ce que le scope de vie d'un thread ? En informatique, le scope de vie désigne la durée de vie d'un élément de code, comme par exemple une variable. Par exemple, en Java, le scope est souvent défini entre "{}", ce qui signifie qu'après la fermeture des accolades, la variable n'existera plus.
+\\
+
+Dans le cas des threads, il en est de même. En effet, prenons par exemple la fonction \textit{main()}. À l'intérieur de celle-ci, on déclare un thread et on le crée. On lui donne une action à effectuer, par exemple écrire en console dix fois "Hello, world!", et ensuite, dans la fonction \textit{main}, on va écrire trois fois en console "Hello, world!". Normalement, on s'attend à un résultat de 13 "Hello, world!" en console à la fin de l'exécution de notre programme. Mais dans les faits, le résultat est différent : les 13 "Hello, world!" ne seront jamais affichés. Mais pourquoi cela ? La réponse est simple, le scope de vie du thread se termine en même temps que la fonction \textit{main} finit son exécution. Qu'est-ce que cela veut dire dans notre exemple concret ? La fonction \textit{main} se terminera dès qu'elle aura fini d'écrire en console les trois "Hello, world!", et donc elle terminera également le thread lancé auparavant, et ce sans attendre la finition complète de son exécution.
+\\
+
+Pour remédier à ce problème, une fonction est mise à notre disposition pour attendre qu'un thread finisse complètement son exécution avant de continuer. Il s'agit de la fonction \textit{pthread\_join()}. Cette fonction va attendre la finition du thread voulu passé en paramètre avant de continuer. Regardons la structure de la fonction \textit{pthread\_join()}.
+
+
+\begin{lstlisting}
+#include <pthread.h>
+    int pthread_join(pthread_t thread, void **retval);
+\end{lstlisting}
+\vspace{\baselineskip}
+
+
+\textit{pthread\_join(pthread\_t thread, void **retval)} possède 2 paramètres :
+
+\begin{itemize}
+    \item thread qui correspond à l'id du thread que nous souhaitons attendre.
+    \\
+    \item retval qui est un pointeur vers un pointeur où la valeur de sortie seras stockée. Si nous avons pas besoin de la valeur du retour du thread on peut juste mettre NULL.
+\end{itemize}
+\vspace{\baselineskip}
+
+Grâce à cette fonction, nous pouvons maintenant, s'il y a besoin, attendre la fin du thread et également récupérer sa valeur de retour éventuelle. Son homologue du côté des processus serait la fonction \textit{wait()}.
+
+Pour bien illustrer le fonctionnement d'un join simple, voici un petit bout de code :
+
+
+
+\begin{lstlisting}[title = Exemple code join]
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+void* myturn(void* arg){
+	for(int i = 0; i < 10; i++){
+		sleep(1);
+		printf("My turn %d \n", i);
+	}
+return NULL;
+}
+void* yourturn(void* arg){
+	for(int i = 0; i < 4; i++){
+		sleep(1);
+		printf("Your turn %d \n",i);
+	}
+ return NULL;
+}
+
+int main(){
+	pthread_t newthread;
+
+	pthread_create(&newthread, NULL, &myturn, NULL);
+	
+	yourturn();
+
+	pthread_join(newthread, NULL);
+}
+\end{lstlisting}
+\vspace{\baselineskip}
+
+Ce code affichera 10 fois "My turn" et 4 fois "Your turn", dans un ordre différent à chaque fois, car cela dépend de l'ordonnanceur.

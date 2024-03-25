@@ -1,0 +1,223 @@
+\section{Variables}
+Comme énoncé auparavant, lors de la créations du thread, le thread copie certaines choses et en partage d'autres avec le thread appelant. Il le fait dans un but primaire d'augmenter les performances lors de la création de ce dernier. Dans cette partie nous allons nous pencher sur les différences majeures pour gérer les variables entre processus et thread. 
+
+\subsection{Donnée globale}
+\subsubsection{Processus}
+Prenons comme premier exemple une variable globale. Lors de la création d'un processus, sans utilisations de quelconque moyen de partage de données inter processus (pipe, shared memory, etc ), le processus fils effectueras une copie de cette variable et donc n'utiliseras pas directement la variable du processus parent. De ce fait, lors de la modification de la valeur dans le fils, le parent ne verras pas de changement dans la valeur. 
+
+\begin{lstlisting}[title = Variable globale processus]
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+
+int x = 2;
+
+int main(int argc, char const *argv[])
+{
+
+	int pid = fork();
+
+	if(pid == -1){
+		return 1;
+	}
+	if (pid == 0)
+	{
+		x++;
+        exit(0);
+        printf("Valeur de x pour le process %d est : %d\n", getpid(), x);
+        exit(0);
+	}
+
+	sleep(2);
+	printf("Valeur de x pour le process %d est : %d\n", getpid(), x);
+
+
+	if(pid != 0){
+		wait(NULL);
+	}
+	return 0;
+}
+\end{lstlisting}
+\vspace{\baselineskip}
+
+
+Ce programme nous afficheras alors : 
+\\
+\line(1,0){\linewidth}
+\\
+Valeur de x pour le process 4526 est : 2\\
+Valeur de x pour le process 4527 est : 3
+\\
+\line(1,0){\linewidth}
+\subsubsection{Thread}
+
+Or, du coté des thread, vus que le thread ne copie pas touts les éléments lors de sa création à partir thread appelant, cela lui permets d'avoir un accès direct à cette variable. Le thread fils peut alors modifier cette variable et le thread parent verras également la variable changer de valeur. 
+\\
+\begin{lstlisting}[title = Variable globale thread]
+#include <unistd.h>
+#include <pthread.h>
+#include <stdio.h>
+
+int x = 2;
+
+void* routine1(){
+	x +=5;
+	pid_t tid = gettid();
+	printf("Le Thread %d voit pour valeur de x : %d \n", tid, x);
+    return NULL;
+}
+void* routine2(){
+	pid_t tid = gettid();
+	printf("Le Thread %d voit pour valeur de x : %d \n", tid, x);
+    return NULL;
+}
+
+int main(int argc, char const *argv[])
+{
+	pthread_t t1,t2;
+
+	if (pthread_create(&t1, NULL, &routine1, NULL))
+	{
+		return 1;
+	}
+    sleep(2);
+	if (pthread_create(&t2, NULL, &routine2, NULL))
+	{
+		return 2;
+	}
+
+	if (pthread_join(t1, NULL))
+	{
+		return 3;
+	}
+	if (pthread_join(t2, NULL))
+	{
+		return 4;
+	}
+
+
+	return 0;
+}
+\end{lstlisting}
+\vspace{\baselineskip}
+
+On verras alors à l'issue de ce programme : 
+\\
+\line(1,0){\linewidth}
+\\
+Le Thread 4851 voit pour valeur de x : 7\\
+Le Thread 4852 voit pour valeur de x : 7
+\\
+\line(1,0){\linewidth}
+
+Le thread possède un accès direct à la valeur de la variable. En changeant son contenus, le thread fils change également son contenus pour le parent et également pour les autres fils du parents! Cette gestion de variable présente bien évidement de nombreux avantages tels que la rapidité de partage (il ne faut pas passer par un pipe ou un espace mémoire partagé comme dans les processus). Mais bien que cette solution aie des qualité, elle possède également son lots d'inconvénients. On reviendras sur ce points plus loin dans le documents.
+
+\subsection{Variable locale}
+\subsubsection{Processus}
+En ce qui concerne les variables locales dans un processus, leurs fonctionnement est le même que celui des variables globales. Lors d'un \textit{fork()} le processus parent seras copier pour donner naissance au processus fils. Dès lors, toutes modification aux variables, qu'il s'agisse de variables locales ou globale, n'affecteras pas d'autre processus que lui même. 
+\\
+
+\subsubsection{Petite remarque}
+Les processus utilise une technique appelée \textbf{Copy-On-Write} afin d'optimiser la création d'un processus fils.Lorsqu'un processus \textit{fork()} est créé, la mémoire du processus parent n'est pas immédiatement copiée pour le processus fils. Au lieu de cela, les deux processus partagent initialement la même mémoire physique. La copie réelle des pages mémoire n'est effectuée que lorsque l'un des processus tente de modifier le contenu de ces pages.
+
+Le processus fils et le processus parent partagent la même copie physique des pages mémoire tant que ces pages ne sont pas modifiées. Lorsqu'une modification est tentée (par exemple, une écriture dans une variable), une copie distincte de la page mémoire est alors créée pour le processus qui effectue la modification. Ainsi, chaque processus a sa propre copie des pages mémoire modifiées, évitant ainsi les conflits.
+\subsubsection{Thread}
+
+Dans le cas des threads, le fonctionnement des variables locales n'est plus le même que celui de variables globales. En effet, un thread "fils" n'auras pas accès aux variables locales du thread appelant. La raison de cela découle du design du thread. Comme nous l'avons vus au début dans ce schéma~\ref{fig:thread_memory} chaque thread possède sa propre pile d'exécution (stack) dans lequel sont stockée les variables locales. C'est alors, suite à ce design, que les threads ne partagerons pas les variables globales entre eux.
+
+\subsubsection{param thread}
+Une question survient alors, comment passer une variable locale au thread? Un pipe? Une zone de mémoire partagée? La réponses est bien plus simple, passer toutes les variables en paramètre . En effet, comme détaillé dans l'analyse de la fonction \textit{pthread\_create()} le dernier paramètre de celle-ci sert à passer des variables à la fonction exécutée par le thread. Vus que la la fonction attend un pointeur de \textbf{void} en paramètre, on peux lui passer n'importe quel type de donnée. Si on doit lui passé plusieurs données à la fois, il est judicieux de le faire à travers une structure. Voici à quoi ressemble un bout de code où un thread utilise une structure pour passer 2 variables différentes.
+\\
+
+\begin{lstlisting}[title = Variable en paramètre]
+.
+.
+.
+struct SharedData{
+    int glob;
+    pthread_mutex_t mutex;
+}
+static void *
+routine(void *arg)
+{
+    struct SharedData *donnees = (struct SharedData *)arg;
+    pthread_mutex_lock(&(donnees->mutex));
+int loc, j;
+for (j = 0; j <1000000 ; j++) {
+loc = donnees->glob;
+loc++;
+donnees->glob = loc;
+}
+pthread_mutex_unlock(&(donnees->mutex));
+return NULL;
+}
+...
+pthread_create(&t1, NULL, &routine, (void *)&donnees;
+...
+\end{lstlisting}
+\vspace{\baselineskip}
+
+
+Comme on peux le constater dans ce bout de code, on passe un pointeur vers donnees lors de la création du thread. Ensuite, dans le thread il faut "caster" le pointeur de void en un pointeur de structure \textbf{SharedData} pour qu'il soit utilisable. On peut désormais avoir accès et utiliser \textit{glob} et \textit{mutex} à l'intérieur du thread. La structure \textbf{donnees} seras bien évidement modifiée à l'intérieure du thread appelant, si le thread fils la modifie, car il s'agit d'un pointeur vers une même structure.
+
+
+\subsection{Remarque importante}
+
+Comme vus précédemment, le processus fils effectue une copie de la variable. Vus qu'il s'agit d'un simple entier, on serais tenter de dire que pour régler le problème de partage de mémoire il suffirais tout simplement de déclarer par exemple un pointeur de structure. Grâce à cela le processus fils auras le même pointeur que sont parent non? Voyons cela avec ce petit bout de code : 
+
+\begin{lstlisting}[title = Variable pointeur processus]
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+
+struct SharedData {
+    int val;
+}
+
+int main(int argc, char const *argv[])
+{
+    struct SharedData* data;
+    data = (struct SharedData*)malloc(sizeof(struct SharedData));
+    if(data == NULL){
+        fprintf(stderr, "error malloc\n");
+        return 1;
+    }
+    data->val = 0;
+	int pid = fork();
+
+    
+	if(pid == -1){
+		return 1;
+	}
+	if (pid == 0)
+	{
+		data->val = 10;
+	}
+
+	sleep(5);
+	printf("Valeur de x pour le process %d est : %d\n", getpid(), x);
+
+
+	if(pid != 0){
+		wait(NULL);
+	}
+	return 0;
+}
+\end{lstlisting}
+\vspace{\baselineskip}
+
+Nous verrons alors le résultats suivant :
+\\
+\line(1,0){\linewidth}
+\\
+Valeur de x pour le process 5385 est : 0\\
+Valeur de x pour le process 5386 est : 10
+\\
+\line(1,0){\linewidth}
+
+On peut alors se demander pourquoi cela? On as quand même bien déclarer un pointeur vers la structure. Le pointeur étant alors copié et pas directement la structure, on devrais pouvoir accéder à la même structure à partir du fils ainsi que du parent en toute logique. Toute la subtilité réside dans la fonction \textit{fork()}. En effet la fonction \textit{fork()} vas copier le processus appelant dans un tout nouvel espace mémoire. En conséquence, la valeur du pointeur resteras bien la même mais l'adresse vers laquelle il vas pointer vas changer car il vas pointer une adresse relative au processus, et non l'espace mémoire réel sur le PC. Le seul moyen viable de communiquer entre les processus restent les solutions prévues pour (pipes, shared memory, etc).
+

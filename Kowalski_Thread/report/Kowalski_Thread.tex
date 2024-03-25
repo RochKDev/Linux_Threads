@@ -1,0 +1,48 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{mdframed}
+
+\lstset{
+    language=C,
+    basicstyle=\ttfamily\color{blue},
+    keywordstyle=\color{purple}\bfseries,
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    showstringspaces=false,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    captionpos=t,
+    breaklines=true,
+}
+
+\title{Threads Posix sous Linux}
+\author{Roch Kowalski}
+\date{Novembre 2023}
+
+
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\include{intro}
+\include{intro_threads}
+\include{creation_thread}
+\include{join_thread}
+\include{valeur_thread}
+\include{synchro}
+\include{conclusion}
+\include{references}
+
+
+
+\end{document}
